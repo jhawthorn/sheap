@@ -68,10 +68,6 @@ class Sheap
       @heap.inverse_references[address] || EMPTY_ARRAY
     end
 
-    def hash
-      @json.hash
-    end
-
     def data
       JSON.parse(@json)
     end
