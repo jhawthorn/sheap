@@ -99,6 +99,8 @@ class Sheap
       case type_str
       when "CLASS"
         s << " " << name
+      when "MODULE"
+        s << " " << name
       when "STRING"
         s << " " << data["value"].inspect
       when "IMEMO"
@@ -139,7 +141,10 @@ class Sheap
       if @heap.equal?(other.heap)
         @json == other.json
       else
-        address == other.address
+        address == other.address &&
+          type_str == other.type_str &&
+          file == other.file &&
+          line == other.line
       end
     end
     alias_method :==, :eql?
