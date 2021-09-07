@@ -84,6 +84,10 @@ class Sheap
       @json[/"imemo_type":"([a-z]+)"/, 1]
     end
 
+    def struct
+      @json[/"struct":"([a-zA-Z]+)"/, 1]
+    end
+
     def name
       data["name"]
     end
@@ -107,6 +111,8 @@ class Sheap
         s << " " << (imemo_type || "unknown")
       when "OBJECT"
         s << " " << klass.name
+      when "DATA"
+        s << " " << struct.to_s
       end
 
       refs = referenced_addrs
@@ -142,9 +148,7 @@ class Sheap
         @json == other.json
       else
         address == other.address &&
-          type_str == other.type_str &&
-          file == other.file &&
-          line == other.line
+          type_str == other.type_str
       end
     end
     alias_method :==, :eql?
