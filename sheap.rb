@@ -102,7 +102,7 @@ class Sheap
 
       case type_str
       when "CLASS"
-        s << " " << name
+        s << " " << (name || "(anonymous)")
       when "MODULE"
         s << " " << name
       when "STRING"
@@ -110,7 +110,7 @@ class Sheap
       when "IMEMO"
         s << " " << (imemo_type || "unknown")
       when "OBJECT"
-        s << " " << klass.name
+        s << " " << (klass.name || "(#{klass.address})")
       when "DATA"
         s << " " << struct.to_s
       end
