@@ -11,6 +11,30 @@ class Sheap
     FileUtils.mkdir_p(@dir)
   end
 
+  class Diff
+    attr_reader :before, :after
+    def initialize(before, after)
+      @before = before
+      @after = after
+    end
+
+    def retained
+      @retained ||= after.objects - before.objects
+    end
+  end
+
+  def self.load
+    Dir["sheap/*"].map do |file|
+      Heap.new(file)
+    end
+  end
+
+  def self.load_diff
+    before = Heap.new("sheap/snapshot-0.dump")
+    after = Heap.new("sheap/snapshot-1.dump")
+    Diff.new(before, after)
+  end
+
   def snapshot(gc: true)
     3.times { GC.start } if gc
 
@@ -88,6 +112,10 @@ class Sheap
       @json[/"struct":"([a-zA-Z]+)"/, 1]
     end
 
+    def wb_protected?
+      @json.include?('"wb_protected":true')
+    end
+
     def name
       data["name"]
     end
@@ -104,7 +132,7 @@ class Sheap
       when "CLASS"
         s << " " << (name || "(anonymous)")
       when "MODULE"
-        s << " " << name
+        s << " " << (name || "(anonymous)")
       when "STRING"
         s << " " << data["value"].inspect
       when "IMEMO"
@@ -136,7 +164,8 @@ class Sheap
     end
 
     def location
-      "#{file}:#{line}"
+      f = file
+      "#{f}:#{line}" if f
     end
 
     def frozen?
