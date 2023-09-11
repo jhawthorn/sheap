@@ -247,7 +247,9 @@ class Sheap
       objects.select { |o| o.type_str == type }
     end
 
-    def find_path(start_address, end_address)
+    # finds a path from `start_address` through the inverse_references hash
+    # and so the end_address will be the object that's closer to the root
+    def find_inverse_path(start_address, end_address)
       q = [[start_address]]
       visited = Set.new
       while !q.empty?
