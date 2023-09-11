@@ -246,5 +246,31 @@ class Sheap
       type = type.to_s.upcase
       objects.select { |o| o.type_str == type }
     end
+
+    def find_path(start_address, end_address)
+      q = [[start_address]]
+      visited = Set.new
+      while !q.empty?
+        current_path = q.shift
+        current_address = current_path.last
+
+        if current_address == end_address
+          return current_path.map{|addr| at(addr)}
+        end
+  
+        if !visited.include?(current_address)
+          visited.add(current_address)
+
+          if inverse_references[current_address].nil?
+            return 'NO PATH FROM ROOT OBJ'
+          end
+
+          inverse_references[current_address].each do |obj|
+            q.push(current_path + [obj.address])
+          end
+        end
+      end
+      return 'NOT FOUND'
+    end
   end
 end
