@@ -1,3 +1,19 @@
 #!/usr/bin/env ruby
 
 require "sheap"
+require "irb"
+
+heap = "asdfasdf"
+
+if ARGV.size == 0
+elsif ARGV.size == 1
+  $heap = @heap = Sheap::Heap.new(ARGV.shift)
+else
+  raise
+end
+
+require 'irb'
+IRB.setup nil
+IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
+require 'irb/ext/multi-irb'
+IRB.irb nil, @heap
