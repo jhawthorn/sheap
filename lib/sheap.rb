@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "sheap/version"
+
 require "objspace"
 require "fileutils"
 require "json"
