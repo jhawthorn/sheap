@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
-require_relative "sheap/version"
-
 require "objspace"
 require "fileutils"
 require "json"
 
 class Sheap
+  def self.reload!
+    load __FILE__
+  end
+
   def initialize
     @dir = File.expand_path("sheap")
     @idx = 0
@@ -124,6 +126,11 @@ class Sheap
 
     def klass
       @heap.at(class_addr)
+    end
+
+    def instances
+      raise unless type_str == "CLASS"
+      heap.instances_of(self)
     end
 
     def inspect
@@ -244,9 +251,29 @@ class Sheap
       objects_by_addr[addr]
     end
 
+    def class_named(name)
+      objects.select do |obj|
+        obj.json.include?(name) &&
+          obj.type_str == "CLASS" &&
+          obj.name == name
+      end
+    end
+
+    def instances_of(klass)
+      addr = klass.address
+      objects.select do |obj|
+        obj.json.include?(addr) &&
+          obj.class_addr == addr
+      end
+    end
+
     def of_type(type)
       type = type.to_s.upcase
       objects.select { |o| o.type_str == type }
+    end
+
+    def inspect
+      "#<#{self.class} (#{objects.size} objects)>"
     end
   end
 end
