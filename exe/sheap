@@ -5,11 +5,24 @@ require "irb"
 
 heap = "asdfasdf"
 
+usage = <<~USAGE
+Usage: sheap
+       sheap HEAPDUMP
+       sheap BEFORE AFTER
+USAGE
+
 if ARGV.size == 0
 elsif ARGV.size == 1
   $heap = @heap = Sheap::Heap.new(ARGV.shift)
+  puts("$heap: #{@heap.inspect}")
+elsif ARGV.size == 2
+  $before = @before = Sheap::Heap.new(ARGV.shift)
+  $after = @after = Sheap::Heap.new(ARGV.shift)
+  $diff = @diff = Sheap::Diff.new(@before, @after)
+  puts("$before: #{@before.inspect}, $after: #{@after.inspect}, $diff: #{@diff.inspect}")
 else
-  raise
+  $stderr.puts usage
+  exit
 end
 
 require 'irb'
