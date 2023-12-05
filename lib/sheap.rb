@@ -15,7 +15,32 @@ class Sheap
     FileUtils.mkdir_p(@dir)
   end
 
+  module Collection
+    def class_named(name)
+      objects.select do |obj|
+        obj.json.include?(name) &&
+          obj.type_str == "CLASS" &&
+          obj.name == name
+      end
+    end
+
+    def instances_of(klass)
+      addr = klass.address
+      objects.select do |obj|
+        obj.json.include?(addr) &&
+          obj.class_addr == addr
+      end
+    end
+
+    def of_type(type)
+      type = type.to_s.upcase
+      objects.select { |o| o.type_str == type }
+    end
+  end
+
   class Diff
+    include Collection
+
     attr_reader :before, :after
     def initialize(before, after)
       @before = before
@@ -23,7 +48,25 @@ class Sheap
     end
 
     def retained
-      @retained ||= after.objects - before.objects
+      @retained ||= calculate_retained
+    end
+    alias objects retained
+
+    def inspect
+      "#<#{self.class} (#{objects.size} objects)>"
+    end
+
+    private
+
+    def calculate_retained
+      set = Set.new
+      @after.each_object do |obj|
+        set.add(obj)
+      end
+      @before.each_object do |obj|
+        set.delete(obj)
+      end
+      set.to_a
     end
   end
 
@@ -201,6 +244,8 @@ class Sheap
   end
 
   class Heap
+    include Collection
+
     attr_reader :filename
 
     def initialize(filename)
@@ -249,27 +294,6 @@ class Sheap
 
     def at(addr)
       objects_by_addr[addr]
-    end
-
-    def class_named(name)
-      objects.select do |obj|
-        obj.json.include?(name) &&
-          obj.type_str == "CLASS" &&
-          obj.name == name
-      end
-    end
-
-    def instances_of(klass)
-      addr = klass.address
-      objects.select do |obj|
-        obj.json.include?(addr) &&
-          obj.class_addr == addr
-      end
-    end
-
-    def of_type(type)
-      type = type.to_s.upcase
-      objects.select { |o| o.type_str == type }
     end
 
     def inspect
