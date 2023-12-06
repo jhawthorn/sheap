@@ -17,10 +17,7 @@ class TestSheap < Minitest::Test
       ObjectSpace.dump_all(output: open("tmp/snapshot2.dump", "w"))
     RUBY
 
-    before = Sheap::Heap.new("tmp/snapshot1.dump")
-    after  = Sheap::Heap.new("tmp/snapshot2.dump")
-
-    diff = Sheap::Diff.new(before, after)
+    diff = Sheap::Diff.new("tmp/snapshot1.dump", "tmp/snapshot2.dump")
     assert_includes (10000..10500), diff.objects.size
 
     arrays = diff.of_type("ARRAY")

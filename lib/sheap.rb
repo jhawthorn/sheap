@@ -43,8 +43,8 @@ class Sheap
 
     attr_reader :before, :after
     def initialize(before, after)
-      @before = before
-      @after = after
+      @before = Heap.wrap(before)
+      @after = Heap.wrap(after)
     end
 
     def retained
@@ -298,6 +298,10 @@ class Sheap
 
     def inspect
       "#<#{self.class} (#{objects.size} objects)>"
+    end
+
+    def self.wrap(heap)
+      self === heap ? heap : new(heap)
     end
   end
 end
