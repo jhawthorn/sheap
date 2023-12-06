@@ -163,6 +163,10 @@ class Sheap
       @json.include?('"wb_protected":true')
     end
 
+    def old?
+      @json.include?('"old":true')
+    end
+
     def name
       data["name"]
     end
