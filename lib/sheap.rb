@@ -116,6 +116,10 @@ class Sheap
       @json[/"type":"([A-Z]+)"/, 1]
     end
 
+    def root?
+      @json.include?('"type":"ROOT"')
+    end
+
     def address
       @json[/"address":"(0x[0-9a-f]+)"/, 1] || @json[/"root":"([a-z_]+)"/, 1]
     end
@@ -294,6 +298,44 @@ class Sheap
           end
           hash.freeze
         end
+    end
+
+    def roots
+      of_type("ROOT")
+    end
+
+    # finds a path from `start_address` through the inverse_references hash
+    # and so the end_address will be the object that's closer to the root
+    def find_path(start_addresses, end_addresses = nil)
+      if end_addresses.nil?
+        end_addresses = start_addresses
+        start_addresses = roots
+      end
+      start_addresses = Array(start_addresses)
+      end_addresses = Array(end_addresses)
+
+      q = start_addresses.map{|x| [x] }
+
+      visited = Set.new
+      while !q.empty?
+        current_path = q.shift
+        current_address = current_path.last
+
+        if end_addresses.include?(current_address)
+          return current_path.map{|addr| addr}
+        end
+
+        if !visited.include?(current_address)
+          visited.add(current_address)
+
+          current_references = current_address.references
+
+          current_references.each do |obj|
+            q.push([*current_path, obj])
+          end
+        end
+      end
+      nil
     end
 
     def at(addr)
