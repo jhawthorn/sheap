@@ -160,7 +160,7 @@ class Sheap
     end
 
     def struct
-      @json[/"struct":"([a-zA-Z]+)"/, 1]
+      @json[/"struct":"([^"]+)"/, 1]
     end
 
     def wb_protected?
