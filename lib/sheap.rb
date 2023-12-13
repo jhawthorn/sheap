@@ -70,28 +70,6 @@ class Sheap
     end
   end
 
-  def self.load
-    Dir["sheap/*"].map do |file|
-      Heap.new(file)
-    end
-  end
-
-  def self.load_diff
-    before = Heap.new("sheap/snapshot-0.dump")
-    after = Heap.new("sheap/snapshot-1.dump")
-    Diff.new(before, after)
-  end
-
-  def snapshot(gc: true)
-    3.times { GC.start } if gc
-
-    output = File.join(@dir, "snapshot-#{@idx}.dump")
-    File.open(output, "w") do |file|
-      ObjectSpace.dump_all(output: file)
-    end
-    @idx += 1
-  end
-
   class << self
     def instance
       @instance ||= new
