@@ -134,7 +134,7 @@ class Sheap
     end
 
     def imemo_type
-      @json[/"imemo_type":"([a-z]+)"/, 1]
+      @json[/"imemo_type":"([a-z_]+)"/, 1]
     end
 
     def struct
