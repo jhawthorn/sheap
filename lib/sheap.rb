@@ -60,7 +60,7 @@ class Sheap
 
     def calculate_retained
       set = Set.new
-      @after.each_object do |obj|
+      @after.objects.each do |obj|
         set.add(obj)
       end
       @before.each_object do |obj|
