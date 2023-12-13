@@ -53,6 +53,25 @@ class TestSheap < Minitest::Test
     assert_equal small_array, path[2]
   end
 
+  def test_compressed
+    run_ruby(<<~RUBY)
+      require "objspace"
+      require "zlib"
+      GC.start
+      $arr = []
+      1337.times { $arr << [] }
+      Zlib::GzipWriter.open("tmp/snapshot1.dump.gz") do |f|
+        f.write ObjectSpace.dump_all(output: :string)
+      end
+    RUBY
+
+    heap = Sheap::Heap.new("tmp/snapshot1.dump.gz")
+    assert heap.roots.size > 0
+
+    # Check that all objects can be deserialized
+    heap.objects.each(&:data)
+  end
+
   def run_ruby(code)
     system("ruby", "--disable-gems", "-e", code)
   end

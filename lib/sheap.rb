@@ -241,10 +241,20 @@ class Sheap
     def each_object
       return enum_for(__method__) unless block_given?
 
-      File.open(filename) do |file|
+      open_file do |file|
         file.each_line do |json|
           yield HeapObject.new(self, json)
         end
+      end
+    end
+
+    def open_file(&block)
+      # FIXME: look for magic header
+      if filename.end_with?(".gz")
+        require "zlib"
+        Zlib::GzipReader.open(filename, &block)
+      else
+        File.open(filename, &block)
       end
     end
 
