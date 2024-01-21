@@ -73,7 +73,7 @@ $diff.after.at("0x1023efc80")
 => <ARRAY 0x1023efc80>
 
 # Show that object's path back to the root of the heap 
-$diff.after.find_paths($diff.after.at("0x1023efc80"))
+$diff.after.find_path($diff.after.at("0x1023efc80"))
 # => [<ROOT global_tbl (13 refs)>, <ARRAY 0x1023effc8 (10000 refs)>, <ARRAY 0x1023efc80>]
 ```
 
