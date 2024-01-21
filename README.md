@@ -14,13 +14,13 @@ Why Ruby heap dumps, briefly:
 
 ## Installation
 
-You can `gem install sheap` to get sheap as a library and command line tool. You can also download `lib/sheap.rb` to a remote server and require it as a standalone file from irb.
+You can `gem install sheap` to get sheap as a library and command line tool. You can also download `lib/sheap.rb` to a remote server and require it as a standalone file from IRB.
 
 ## Usage
 
 Using the command line will open an IRB session with the heap loaded. You can then use the `$diff`, `$before`, and `$after` variable to explore the heap.
 
-```
+```console
 $ sheap [HEAP_BEFORE.dump] [HEAP_AFTER.dump]
 ```
 
