@@ -338,4 +338,70 @@ class Sheap
       self === heap ? heap : new(heap)
     end
   end
+
+  # A representation of the heap in which objects are organized in layers
+  # based on their references. The first layer (depth 0) contains the root objects,
+  # the next layer (depth 1) contains the objects that are referenced by the root objects,
+  # and so on. The depth of an object is the length of the shortest path from the
+  # object to a root object.
+  class AcyclicHeap
+    attr_reader :heap, :layers
+
+    def initialize(heap)
+      @heap = heap
+      @layers = build_layers
+    end
+
+    def depth_of(obj)
+      layers.index { |layer| layer.include?(obj) }
+    end
+
+    # All of the deeper objects whose path to the root passes through the given object.
+    def referenced_through(object)
+      cumulative_refs = Set.new
+      unprocessed_refs = Set.new
+
+      current_ref = object
+      loop do
+        depth_of_current_ref = depth_of(current_ref)
+        current_ref.references.each do |ref|
+          ref_depth = depth_of(ref)
+          next if ref_depth && ref_depth <= depth_of_current_ref
+          next if cumulative_refs.include?(ref) || unprocessed_refs.include?(ref)
+
+          unprocessed_refs << ref
+        end
+
+        break if unprocessed_refs.empty?
+        current_ref = unprocessed_refs.first.tap { |o| unprocessed_refs.delete(o) } # pop
+        cumulative_refs << current_ref
+      end
+
+      cumulative_refs
+    end
+
+    private
+
+    def build_layers
+      remaining_objects = Set.new(heap.objects)
+      root_objects = Set.new(remaining_objects.select(&:root?))
+      remaining_objects.subtract(root_objects)
+
+      layers = [root_objects]
+      loop do
+        previous_layer = layers.last
+        next_layer = Set.new
+
+        previous_layer.map(&:references).flatten.each do |obj|
+          next unless remaining_objects.include?(obj)
+          next_layer << obj
+          remaining_objects.delete(obj)
+        end
+        break if next_layer.size == 0
+        layers << next_layer
+      end
+
+      layers
+    end
+  end
 end

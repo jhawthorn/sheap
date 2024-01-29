@@ -53,6 +53,30 @@ class TestSheap < Minitest::Test
     assert_equal small_array, path[2]
   end
 
+  def test_acyclic_heap
+    run_ruby(<<~RUBY)
+      require "objspace"
+      GC.start
+      $arr = []
+      1337.times { $arr << [] }
+      ObjectSpace.dump_all(output: open("tmp/snapshot1.dump", "w"))
+    RUBY
+
+    heap = Sheap::Heap.new("tmp/snapshot1.dump")
+    aheap = Sheap::AcyclicHeap.new(heap)
+
+    assert aheap.layers.size > 0
+    assert aheap.layers.all? { |x| x.size > 0 }, "All layers should have at least one object"
+    assert aheap.layers[0].all? { |obj| obj.root? } && aheap.layers[0].size == heap.roots.size, "First layer should contain all roots"
+
+    all_objects = aheap.layers.map(&:to_a).flatten
+    assert_equal all_objects.size, all_objects.uniq.size, "All objects across all layers should be unique"
+
+    assert_equal 0, aheap.depth_of(heap.roots.first)
+    assert aheap.referenced_through(heap.roots.first).size > 0
+    assert aheap.referenced_through(heap.roots.first).all? { |obj| aheap.depth_of(obj) > 0 }
+  end
+
   def test_compressed
     run_ruby(<<~RUBY)
       require "objspace"
