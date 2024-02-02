@@ -114,7 +114,7 @@ class Sheap
     def references
       referenced_addrs.map do |addr|
         @heap.at(addr)
-      end
+      end.compact
     end
 
     def inverse_references
