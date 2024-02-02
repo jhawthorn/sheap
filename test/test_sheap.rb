@@ -15,6 +15,8 @@ class TestSheap < Minitest::Test
       ObjectSpace.dump_all(output: open("tmp/snapshot1.dump", "w"))
       10_000.times { $arr << [] }
       ObjectSpace.dump_all(output: open("tmp/snapshot2.dump", "w"))
+      7_777.times { $arr << [] }
+      ObjectSpace.dump_all(output: open("tmp/snapshot3.dump", "w"))
     RUBY
 
     diff = Sheap::Diff.new("tmp/snapshot1.dump", "tmp/snapshot2.dump")
@@ -27,6 +29,12 @@ class TestSheap < Minitest::Test
 
     assert_equal 10_000, big_array.data["length"]
     assert_equal 10_000, big_array.references.size
+
+    triple_diff = Sheap::Diff.new("tmp/snapshot1.dump", "tmp/snapshot2.dump" , "tmp/snapshot3.dump")
+    assert_includes (10000..10500), diff.objects.size
+
+    arrays = triple_diff.of_type("ARRAY")
+    assert_includes (10000..10500), arrays.count
   end
 
   def test_paths_to_root
