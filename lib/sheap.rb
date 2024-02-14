@@ -341,6 +341,22 @@ class Sheap
     def hash
       address.hash
     end
+
+    def method_missing(name, *args)
+      if value = data[name.to_s]
+        value
+      else
+        super
+      end
+    end
+
+    def respond_to_missing?(name, *)
+      data.key?(name.to_s) || super
+    end
+
+    def [](key)
+      data[key.to_s]
+    end
   end
 
   class Heap
