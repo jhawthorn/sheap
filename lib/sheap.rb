@@ -17,7 +17,7 @@ class Sheap
 
   module Collection
     def class_named(name)
-      objects.select do |obj|
+      filter do |obj|
         obj.json.include?(name) &&
           obj.type_str == "CLASS" &&
           obj.name == name
@@ -26,7 +26,7 @@ class Sheap
 
     def instances_of(klass)
       addr = klass.address
-      objects.select do |obj|
+      filter do |obj|
         obj.json.include?(addr) &&
           obj.class_addr == addr
       end
@@ -34,8 +34,31 @@ class Sheap
 
     def of_type(type)
       type = type.to_s.upcase
-      objects.select { |o| o.type_str == type }
+      filter { |o| o.json.include?(type) && o.type_str == type }
     end
+
+    def classes; of_type("CLASS"); end
+    def icasses; of_type("ICLASS"); end
+    def modules; of_type("MODULE"); end
+    def imemos; of_type("IMEMO"); end
+
+    def strings; of_type("STRING"); end
+    def hashes; of_type("HASH"); end
+    def arrays; of_type("ARRAY"); end
+
+    def plain_objects; of_type("OBJECT"); end
+    def structs; of_type("STRUCT"); end
+    def datas; of_type("DATA"); end
+    def files; of_type("FILE"); end
+
+    def regexps; of_type("REGEXP"); end
+    def matches; of_type("MATCH"); end
+
+    def bignums; of_type("BIGNUM"); end
+    def symbols; of_type("SYMBOL"); end
+    def floats; of_type("FLOAT"); end
+    def rationals; of_type("RATIONAL"); end
+    def complexes; of_type("COMPLEX"); end
   end
 
   class Diff
@@ -49,9 +72,13 @@ class Sheap
     end
 
     def retained
-      @retained ||= calculate_retained
+      @retained ||= HeapObjectCollection.new(calculate_retained, @after)
     end
     alias objects retained
+
+    def filter(&block)
+      @retained.filter(&block)
+    end
 
     def inspect
       "#<#{self.class} (#{objects.size} objects)>"
@@ -90,6 +117,66 @@ class Sheap
 
   EMPTY_ARRAY = [].freeze
 
+  class HeapObjectCollection
+    include Enumerable
+    include Collection
+
+    attr_reader :heap, :objects
+
+    def initialize(objects, heap = nil)
+      objects = objects.to_a unless objects.instance_of?(Array)
+      @objects = objects
+      @heap = heap || objects.first&.heap
+    end
+
+    def filter(&block)
+      HeapObjectCollection.new(@objects.select(&block), @heap)
+    end
+    alias select filter
+
+    def sample(n=nil)
+      if n
+        HeapObjectCollection.new(@objects.sample(n))
+      else
+        @objects.sample
+      end
+    end
+
+    def last(*args)
+      HeapObjectCollection.new(@objects.last(*args))
+    end
+
+    def each(&block)
+      @objects.each(&block)
+    end
+
+    def length
+      @objects.length
+    end
+    alias size length
+    alias count length
+
+    def pretty_print(q)
+      q.group(1, '[', ']') {
+        if size <= 10
+          q.seplist(self) {|v|
+            q.pp v
+          }
+        else
+          q.seplist(first(4)) {|v|
+            q.pp v
+          }
+          q.comma_breakable
+          q.text "... (#{size - 10} more)"
+        end
+      }
+    end
+
+    def inspect
+      "#<#{self.class} (#{size} objects)>"
+    end
+  end
+
   class HeapObject
     attr_reader :heap, :json
 
@@ -120,13 +207,19 @@ class Sheap
     end
 
     def references
-      referenced_addrs.map do |addr|
-        @heap.at(addr)
-      end.compact
+      HeapObjectCollection.new(
+        referenced_addrs.map do |addr|
+          @heap.at(addr)
+        end,
+        heap
+      )
     end
 
     def inverse_references
-      @heap.inverse_references[address] || EMPTY_ARRAY
+      HeapObjectCollection.new(
+        (@heap.inverse_references[address] || EMPTY_ARRAY),
+        heap
+      )
     end
 
     def data
@@ -172,21 +265,24 @@ class Sheap
 
     def inspect
       type_str = self.type_str
-      s = +"<#{type_str} #{address}"
+      s = +"<#{type_str} #{address} #{inspect_hint}>"
+    end
 
+    def inspect_hint
+      s = +""
       case type_str
       when "CLASS"
-        s << " " << (name || "(anonymous)")
+        s << (name || "(anonymous)")
       when "MODULE"
-        s << " " << (name || "(anonymous)")
+        s << (name || "(anonymous)")
       when "STRING"
-        s << " " << data["value"].inspect
+        s << data["value"].inspect
       when "IMEMO"
-        s << " " << (imemo_type || "unknown")
+        s << (imemo_type || "unknown")
       when "OBJECT"
-        s << " " << (klass.name || "(#{klass.address})")
+        s << (klass.name || "(#{klass.address})")
       when "DATA"
-        s << " " << struct.to_s
+        s << struct.to_s
       end
 
       refs = referenced_addrs
@@ -194,7 +290,17 @@ class Sheap
         s << " (#{referenced_addrs.size} refs)"
       end
 
-      s << ">"
+      s
+    end
+
+    def pretty_print(q)
+      current_depth = q.current_group.depth
+      q.group(1, "#<#{type_str}", '>') do
+        q.breakable
+        q.text address
+        q.breakable
+        q.text inspect_hint
+      end
     end
 
     def value
@@ -267,7 +373,11 @@ class Sheap
     end
 
     def objects
-      @objects ||= each_object.to_a
+      @objects ||= HeapObjectCollection.new(each_object.to_a, self)
+    end
+
+    def filter(&block)
+      @objects.filter(&block)
     end
 
     def objects_by_addr
