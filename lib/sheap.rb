@@ -134,7 +134,7 @@ class Sheap
     end
     alias select filter
 
-    def sample(n=nil)
+    def sample(n = nil)
       if n
         HeapObjectCollection.new(@objects.sample(n))
       else
@@ -142,8 +142,12 @@ class Sheap
       end
     end
 
-    def last(*args)
-      HeapObjectCollection.new(@objects.last(*args))
+    def last(n = nil)
+      if n
+        HeapObjectCollection.new(@objects.last(n))
+      else
+        objects.last
+      end
     end
 
     def each(&block)
@@ -158,16 +162,17 @@ class Sheap
 
     def pretty_print(q)
       q.group(1, '[', ']') {
-        if size <= 10
+        if size <= 20
           q.seplist(self) {|v|
             q.pp v
           }
         else
-          q.seplist(first(4)) {|v|
+          preview = 4
+          q.seplist(first(preview)) {|v|
             q.pp v
           }
           q.comma_breakable
-          q.text "... (#{size - 10} more)"
+          q.text "... (#{size - preview} more)"
         end
       }
     end
@@ -263,6 +268,10 @@ class Sheap
       heap.instances_of(self)
     end
 
+    def superclass
+      heap.at(data["superclass"])
+    end
+
     def inspect
       type_str = self.type_str
       s = +"<#{type_str} #{address} #{inspect_hint}>"
@@ -296,10 +305,35 @@ class Sheap
     def pretty_print(q)
       current_depth = q.current_group.depth
       q.group(1, "#<#{type_str}", '>') do
-        q.breakable
+        q.text " "
         q.text address
-        q.breakable
-        q.text inspect_hint
+        if current_depth <= 1
+          data = self.data
+          attributes = data.keys - ["address"]
+          q.seplist(attributes, lambda { q.text ',' }) {|v|
+            q.breakable
+            q.text v
+            q.text "="
+            q.group(1) {
+              q.breakable ''
+              case v
+              when "class"
+                q.pp klass
+              when "superclass"
+                q.pp superclass
+              when "flags"
+                q.text flags.keys.join("|")
+              when "references"
+                q.text "(#{referenced_addrs.size} refs)"
+              else
+                q.pp data[v]
+              end
+            }
+          }
+        else
+          q.breakable
+          q.text inspect_hint
+        end
       end
     end
 
