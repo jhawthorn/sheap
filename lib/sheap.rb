@@ -77,7 +77,7 @@ class Sheap
     alias objects retained
 
     def filter(&block)
-      @retained.filter(&block)
+      retained.filter(&block)
     end
 
     def inspect
@@ -180,6 +180,11 @@ class Sheap
     def inspect
       "#<#{self.class} (#{size} objects)>"
     end
+
+    def to_a
+      @objects
+    end
+    alias to_ary to_a
   end
 
   class HeapObject
@@ -391,11 +396,6 @@ class Sheap
     def [](key)
       data[key.to_s]
     end
-
-    def to_a
-      @objects
-    end
-    alias to_ary to_a
   end
 
   class Heap
