@@ -391,6 +391,11 @@ class Sheap
     def [](key)
       data[key.to_s]
     end
+
+    def to_a
+      @objects
+    end
+    alias to_ary to_a
   end
 
   class Heap
@@ -427,7 +432,7 @@ class Sheap
     end
 
     def filter(&block)
-      @objects.filter(&block)
+      objects.filter(&block)
     end
 
     def objects_by_addr
