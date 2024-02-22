@@ -158,7 +158,9 @@ class Sheap
       @objects.length
     end
     alias size length
-    alias count length
+    def count(&block)
+      @objects.count(&block)
+    end
 
     def pretty_print(q)
       q.group(1, '[', ']') {
