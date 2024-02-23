@@ -37,6 +37,11 @@ class Sheap
       filter { |o| o.json.include?(type) && o.type_str == type }
     end
 
+    def of_imemo_type(type)
+      type = type.to_s.downcase
+      filter { |o| o.json.include?(type) && o.imemo_type == type }
+    end
+
     def classes; of_type("CLASS"); end
     def icasses; of_type("ICLASS"); end
     def modules; of_type("MODULE"); end
@@ -59,6 +64,14 @@ class Sheap
     def floats; of_type("FLOAT"); end
     def rationals; of_type("RATIONAL"); end
     def complexes; of_type("COMPLEX"); end
+
+    # imemo types
+    def iseqs; of_imemo_type("iseq"); end
+    def callcaches; of_imemo_type("callcache"); end
+    def constcaches; of_imemo_type("constcache"); end
+    def callinfos; of_imemo_type("callinfo"); end
+    def crefs; of_imemo_type("cref"); end
+    def ments; of_imemo_type("ment"); end
   end
 
   class Diff
