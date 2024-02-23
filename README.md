@@ -38,43 +38,55 @@ $diff = Sheap::Diff.new('tmp/heap_before.dump', 'tmp/heap_after.dump')
 $diff.retained.map(&:type_str).tally.sort_by(&:last)
 # => [["DATA", 1], ["FILE", 1], ["IMEMO", 4], ["STRING", 4], ["ARRAY", 10000]]
 
-# Find the largest array in the 'after' heap dump
-$diff.after.of_type("ARRAY").sort_by { |o| o.data["length"] }.last
-# => <ARRAY 0x1023effc8 (10000 refs)>
+# Find the 4 largest arrays in the 'after' heap dump
+>> $diff.after.arrays.sort_by(&:length).last(5)
+# =>
+# [#<ARRAY 0x100ec0440  (512 refs)>,
+#  #<ARRAY 0x100ec9270  (512 refs)>,
+#  #<ARRAY 0x100f4b450  (512 refs)>,
+#  #<ARRAY 0x11bc6d5b0  (512 refs)>,
+#  #<ARRAY 0x11c137960  (10000 refs)>]
+
+# Grab and examine just the largest array
+large_arr = $diff.after.arrays.max_by(&:length)
+# =>
+# #<ARRAY 0x1023effc8
+#  type="ARRAY",
+#  shape_id=0,
+#  slot_size=40,
+#  class=#<CLASS 0x100e43350 Array (252 refs)>,
+#  length=10000,
+#  references=(10000 refs),
+#  memsize=89712,
+#  flags=wb_protected>
 
 # Is it old?
-$diff.after.of_type("ARRAY").sort_by { |o| o.data["length"] }.last.old?
+large_arr.old?
 # => false
 
-# What else can be learned about it
-$diff.after.of_type("ARRAY").sort_by { |o| o.data["length"] }.last.data
-# => 
-# { "address"=>"0x1023effc8",
-#   "type"=>"ARRAY",
-#   "shape_id"=>0,
-#   "slot_size"=>40,
-#   "class"=>"0x1024c33f0",
-#   "length"=>10000,
-#   "memsize"=>89712,
-#   "flags"=>{"wb_protected"=>true}
-#   "references" => [
-#      <ARRAY 0x1023efc80>, 
-#      <ARRAY 0x1023efc58>,
-#      <ARRAY 0x1023efc30>,
-#      <ARRAY 0x1023efc08>,
-#      <ARRAY 0x1023efbe0>,
-#      <ARRAY 0x1023efbb8>,
-#      # ...
-#   ]
-# }
+# Find the first of its references
+large_arr.references.first
+# =>
+# #<ARRAY 0x11c13fdb8
+#  type="ARRAY",
+#  shape_id=0,
+#  slot_size=40,
+#  class=#<CLASS 0x100e43350 Array (252 refs)>,
+#  length=0,
+#  embedded=true,
+#  memsize=40,
+#  flags=wb_protected>
 
-# Find the first of its references by address
-$diff.after.at("0x1023efc80")
-=> <ARRAY 0x1023efc80>
+# Reference that same object by address
+$diff.after.at("0x11c13fdb8")
+# =>
+# #<ARRAY 0x11c13fdb8
+#  type="ARRAY",
+#  ...
 
-# Show that object's path back to the root of the heap 
-$diff.after.find_path($diff.after.at("0x1023efc80"))
-# => [<ROOT global_tbl (13 refs)>, <ARRAY 0x1023effc8 (10000 refs)>, <ARRAY 0x1023efc80>]
+# Show that object's path back to the root of the heap
+$diff.after.find_path($diff.after.at("0x11c13fdb8"))
+# => [#<ROOT global_tbl (13 refs)>, #<ARRAY 0x1023effc8 (10000 refs)>, #<ARRAY 0x11c13fdb8>]
 ```
 
 ### Generating heap dumps
