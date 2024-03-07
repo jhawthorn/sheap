@@ -1,6 +1,6 @@
 # Sheap
 
-Sheap is a library for interactively exploring Ruby Heap dumps. Sheap contains contains a command-line tool and a library for use in IRB. 
+Sheap is a library for interactively exploring Ruby Heap dumps. Sheap contains a command-line tool and a library for use in IRB. 
 
 Some examples of things you can do with Sheap:
 - Find all retained objects between two heap dumps, and analyze them by their properties
