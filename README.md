@@ -1,6 +1,6 @@
 # Sheap
 
-Sheap is a library for interactively exploring Ruby Heap dumps. Sheap contains a command-line tool and a library for use in IRB. 
+Sheap is a library for interactively exploring Ruby Heap dumps. Sheap contains a command-line tool and a library for use in IRB.
 
 Some examples of things you can do with Sheap:
 - Find all retained objects between two heap dumps, and analyze them by their properties
@@ -18,10 +18,10 @@ You can `gem install sheap` to get sheap as a library and command line tool. You
 
 ## Usage
 
-Using the command line will open an IRB session with the heap loaded. You can then use the `$diff`, `$before`, and `$after` variable to explore the heap.
+Using the command line will open an IRB session with the heap loaded. You can then use the `$diff`, `$before`, `$after` (and an optional `$later` variable for 3-way diffs) to explore the heap.
 
 ```console
-$ sheap [HEAP_BEFORE.dump] [HEAP_AFTER.dump]
+$ sheap [HEAP_BEFORE.dump] [HEAP_AFTER.dump] [HEAP_LATER.dump]
 ```
 
 To use directly with IRB:
