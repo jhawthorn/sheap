@@ -10,7 +10,7 @@ Usage: sheap                       # Start an IRB session with Sheap loaded
 USAGE
 
 if ARGV.size == 0
-elsif ARGV.size == 1 && ["help", "--help"].include?(ARGV[0])
+elsif ARGV.size == 1 && ARGV[0] == "--help"
   $stderr.puts usage
   exit
 elsif ARGV.size == 1
