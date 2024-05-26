@@ -155,6 +155,10 @@ class Sheap
       end
     end
 
+    def [](*args)
+      @objects[*args]
+    end
+
     def last(n = nil)
       if n
         HeapObjectCollection.new(@objects.last(n))

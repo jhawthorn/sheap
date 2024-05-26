@@ -24,6 +24,11 @@ class TestSheap < Minitest::Test
 
     arrays = diff.of_type("ARRAY")
     assert_includes (10000..10500), arrays.count
+    assert_equal "ARRAY", arrays[0].type_str
+    assert_equal "ARRAY", arrays[1].type_str
+    assert_equal "ARRAY", arrays[-1].type_str
+    assert_same arrays.first, arrays[0]
+    assert_same arrays.last, arrays[-1]
 
     big_array = arrays.flat_map(&:inverse_references).tally.sort_by(&:last).last.first
 
