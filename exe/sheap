@@ -3,15 +3,16 @@
 require "sheap"
 require "irb"
 
-heap = "asdfasdf"
-
 usage = <<~USAGE
-Usage: sheap
-       sheap HEAPDUMP
-       sheap BEFORE AFTER
+Usage: sheap                       # Start an IRB session with Sheap loaded
+       sheap HEAPDUMP              # Load a heap dump within an IRB session
+       sheap BEFORE AFTER [LATER]  # Compare heap dumps within an IRB session
 USAGE
 
 if ARGV.size == 0
+elsif ARGV.size == 1 && ARGV[0] == "--help"
+  $stderr.puts usage
+  exit
 elsif ARGV.size == 1
   $heap = @heap = Sheap::Heap.new(ARGV.shift)
   puts("$heap: #{@heap.inspect}")
@@ -20,6 +21,12 @@ elsif ARGV.size == 2
   $after = @after = Sheap::Heap.new(ARGV.shift)
   $diff = @diff = Sheap::Diff.new(@before, @after)
   puts("$before: #{@before.inspect}, $after: #{@after.inspect}, $diff: #{@diff.inspect}")
+elsif ARGV.size == 3
+  $before = @before = Sheap::Heap.new(ARGV.shift)
+  $after = @after = Sheap::Heap.new(ARGV.shift)
+  $later = @later = Sheap::Heap.new(ARGV.shift)
+  $diff = @diff = Sheap::Diff.new(@before, @after, @later)
+  puts("$before: #{@before.inspect}, $after: #{@after.inspect}, $later: #{@later.inspect}, $diff: #{@diff.inspect}")
 else
   $stderr.puts usage
   exit
