@@ -223,13 +223,13 @@ class Sheap
     end
 
     def address
-      @json[/"address":"(0x[0-9a-f]+)"/, 1] || @json[/"root":"([a-z_]+)"/, 1]
+      @json[/"address":"(0x[0-9a-f]+)"/, 1] || @json[/"root":"([^"]+)"/, 1]
     end
 
     def referenced_addrs
       str = @json[/"references":\[([",0-9a-fx ]+)\]/, 1]
       if str
-        str.tr('"', '').split(", ")
+        str.tr('" ', '').split(",")
       else
         EMPTY_ARRAY
       end
@@ -256,7 +256,7 @@ class Sheap
     end
 
     def memsize
-      @json[/"memsize":(\d+),/, 1].to_i
+      @json[/"memsize":(\d+)/, 1].to_i
     end
 
     def class_addr
@@ -313,7 +313,7 @@ class Sheap
       when "IMEMO"
         s << (imemo_type || "unknown")
       when "OBJECT"
-        s << (klass.name || "(#{klass.address})")
+        s << (klass&.name || "(#{class_addr})")
       when "DATA"
         s << struct.to_s
       end
@@ -417,6 +417,161 @@ class Sheap
     end
   end
 
+  class DominatorTree
+    include Enumerable
+
+    class Node
+      attr_accessor :object, :parent, :children, :retained_size
+
+      def initialize(object)
+        @object = object
+        @children = []
+        @retained_size = object ? object.memsize : 0
+      end
+
+      def synthetic?
+        object.nil?
+      end
+
+      def address
+        object&.address
+      end
+
+      alias dominator parent
+
+      def inspect
+        "#<#{self.class} #{synthetic? ? "(synthetic root)" : object.inspect} retained_size=#{retained_size} (#{children.size} children)>"
+      end
+    end
+
+    attr_reader :heap, :root
+
+    def initialize(heap)
+      @heap = heap
+      build
+    end
+
+    def each(&block)
+      return enum_for(__method__) unless block
+
+      @nodes.each(&block)
+    end
+
+    def [](object_or_address)
+      return @root if object_or_address.nil?
+
+      addr = object_or_address.respond_to?(:address) ? object_or_address.address : object_or_address
+      @nodes_by_address[addr]
+    end
+    alias at []
+
+    def size
+      @nodes.size
+    end
+
+    def inspect
+      "#<#{self.class} (#{size} nodes)>"
+    end
+
+    private
+
+    # Cooper, Harvey, and Kennedy's "A Simple, Fast Dominance Algorithm"
+    def build
+      parent_addrs = {nil => []}
+
+      postorder = []
+      addr_indices = {}
+
+      seen = Set.new
+      stack = [[nil, false]]
+      until stack.empty?
+        addr, post = stack.pop
+        if post
+          i = postorder.size
+          postorder << addr
+          addr_indices[addr] = i
+          next
+        end
+
+        stack << [addr, true]
+
+        children = if addr.nil?
+          heap.roots.map(&:address)
+        else
+          heap.at(addr).referenced_addrs.select { |ref| heap.at(ref) }
+        end
+
+        children.each do |child|
+          parents = parent_addrs[child] ||= []
+          parents << addr
+
+          next unless seen.add?(child)
+
+          stack << [child, false]
+        end
+      end
+
+      # Identify nodes with their postorder numbering so we can do fast array
+      # indexing rather than slower hash lookups
+      parents = postorder.map { |addr| parent_addrs[addr].map(&addr_indices) }
+
+      size = postorder.size
+      root = size - 1
+
+      # The "two-finger" algorithm for dominator intersection
+      idoms = Array.new(size)
+      idoms[root] = root
+      intersect = lambda do |left, right|
+        until left == right
+          left = idoms[left] while left < right
+          right = idoms[right] while right < left
+        end
+        left
+      end
+
+      # Fixpoint iteration to find immediate dominators
+      changed = true
+      while changed
+        changed = false
+        (root - 1).downto(0) do |i|
+          # A node's DFS parent precedes it in reverse postorder, so at least
+          # one parent already has an idom by the time we get here
+          idom = nil
+          parents[i].each do |parent|
+            next unless idoms[parent]
+
+            idom = idom ? intersect.call(parent, idom) : parent
+          end
+
+          unless idoms[i] == idom
+            idoms[i] = idom
+            changed = true
+          end
+        end
+      end
+
+      nodes = postorder.map { |addr| Node.new(heap.at(addr)) }
+      nodes[0...root].each_with_index do |node, i|
+        parent = nodes[idoms[i]]
+        node.parent = parent
+        parent.children << node
+      end
+
+      # Bubble the retained_size up the tree
+      nodes.each do |node|
+        node.children.sort_by! { |child| -child.retained_size }
+        node.children.freeze
+        node.freeze
+        node.parent.retained_size += node.retained_size if node.parent
+      end
+
+      @root = nodes[root]
+      @nodes = nodes.freeze
+      @nodes_by_address = (0...root).to_h { |i| [postorder[i], nodes[i]] }
+      @nodes_by_address.freeze
+    end
+  end
+
   class Heap
     include Collection
 
@@ -482,6 +637,10 @@ class Sheap
 
     def roots
       of_type("ROOT")
+    end
+
+    def dominator_tree
+      @dominator_tree ||= DominatorTree.new(self)
     end
 
     # finds a path from `start_address` through the inverse_references hash
